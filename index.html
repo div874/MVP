@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Your Content | Reel Studio</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-globes">
+        <div class="globe globe-1"></div>
+        <div class="globe globe-2"></div>
+    </div>
+
+    <main class="app-container">
+        <header class="app-header">
+            <div class="brand-logo-wrapper">
+                <img src="logo.jpg" alt="Reel Content Intelligence Logo" class="brand-logo">
+            </div>
+            <div class="brand-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span>AI Reel Intelligence</span>
+            </div>
+            <h1>Analyze Your Content</h1>
+            <p>Upload the reels you've saved and discover the patterns, hooks and content opportunities hidden inside them.</p>
+        </header>
+
+        <section class="upload-card">
+            <div class="card-header">
+                <h2>Add Reel</h2>
+            </div>
+
+            <form id="reelUploadForm" class="upload-form" onsubmit="event.preventDefault(); return false;">
+                <!-- Source Toggle Tabs -->
+                <div class="source-toggle">
+                    <button type="button" class="tab-btn active" id="tabFileUpload" data-tab="file">
+                        <span class="tab-icon">🎥</span>
+                        <span>Upload Video</span>
+                    </button>
+                    <button type="button" class="tab-btn" id="tabUrlUpload" data-tab="url">
+                        <span class="tab-icon">🔗</span>
+                        <span>Single Reel</span>
+                    </button>
+                    <button type="button" class="tab-btn" id="tabMultiUrlUpload" data-tab="multi_url">
+                        <span class="tab-icon">✨</span>
+                        <span>Multiple Links</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: File Dropzone Area -->
+                <div class="tab-content active" id="fileTabContent">
+                    <div class="dropzone" id="dropzone">
+                        <input type="file" id="reelFileInput" accept="video/mp4,video/mov,video/webm,video/quicktime" class="file-input">
+                        
+                        <div class="dropzone-content" id="dropzoneContent">
+                            <div class="upload-icon-wrapper">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                    <rect x="1" y="5" width="15" height="14" rx="3" ry="3"></rect>
+                                </svg>
+                            </div>
+                            <h3 class="dropzone-title">Drag & drop video here</h3>
+                            <p class="dropzone-subtitle">MP4, MOV, or WEBM format supported</p>
+                            <button type="button" class="btn-browse" id="btnBrowse">Browse File</button>
+                        </div>
+
+                        <!-- Video Preview State -->
+                        <div class="preview-container hidden" id="previewContainer">
+                            <div class="video-wrapper">
+                                <video id="videoPreview" controls preload="metadata"></video>
+                            </div>
+                            <div class="file-info-bar">
+                                <div class="file-details">
+                                    <span class="file-name" id="fileName">video.mp4</span>
+                                    <span class="file-meta" id="fileMeta">0 MB</span>
+                                </div>
+                                <button type="button" class="btn-change-file" id="btnChangeFile">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                    </svg>
+                                    Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Single URL Input Area -->
+                <div class="tab-content hidden" id="urlTabContent">
+                    <div class="url-input-container">
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <input type="url" id="reelUrlInput" placeholder="https://www.instagram.com/reel/..." autocomplete="off">
+                        </div>
+                        <span class="input-hint">Paste link from Instagram Reels, TikTok, or YouTube Shorts</span>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Multiple Reel URLs Area -->
+                <div class="tab-content hidden" id="multiUrlTabContent">
+                    <div class="url-input-container">
+                        <div class="input-group">
+                            <label for="reelMultiUrlInput">Multiple Reel Links <span class="optional-tag">(one per line)</span></label>
+                            <textarea id="reelMultiUrlInput" rows="4" placeholder="Paste multiple Reel links (one per line):&#10;https://www.instagram.com/reel/...&#10;https://www.instagram.com/reel/...&#10;https://www.tiktok.com/@..."></textarea>
+                        </div>
+                        <span class="input-hint">✨ Analyzes all Reel links concurrently in parallel (~4-5s total) and synthesizes cross-Reel content patterns.</span>
+                    </div>
+                </div>
+
+                <!-- Caption Field (Optional) -->
+                <div class="form-fields">
+                    <div class="input-group">
+                        <label for="reelCaption">Caption <span class="optional-tag">(optional)</span></label>
+                        <textarea id="reelCaption" rows="3" placeholder="Paste or write caption to help analysis..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="button" class="btn-submit" id="btnSubmit">
+                    <span class="btn-text">Analyze Reel</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            <!-- AI Analysis Results Card -->
+            <div id="statusBanner" class="status-banner hidden">
+                <div class="status-header">
+                    <span class="status-badge" id="statusBadge">✦ Analysis Complete</span>
+                    <span class="status-model" id="statusModel"></span>
+                </div>
+                <div id="statusMessage" class="analysis-body"></div>
+                <div class="status-footer" id="statusFooter"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
