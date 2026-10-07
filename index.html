@@ -141,6 +141,29 @@
                 <div id="statusMessage" class="analysis-body"></div>
                 <div class="status-footer" id="statusFooter"></div>
             </div>
+
+            <!-- Chatbot Section -->
+            <div id="chatSection" class="chat-section hidden">
+                <div class="chat-header">
+                    <h3>💬 Ask about these Reels</h3>
+                </div>
+                
+                <div class="chat-suggestions">
+                    <button class="chat-chip">What did these Reels have in common?</button>
+                    <button class="chat-chip">Which ideas are relevant for my therapy business?</button>
+                    <button class="chat-chip">What should I try first?</button>
+                    <button class="chat-chip">Why did you separate some Reels?</button>
+                    <button class="chat-chip">Give me an example for SoulCare.</button>
+                    <button class="chat-chip">Which Reel is most useful for me?</button>
+                </div>
+
+                <div id="chatLog" class="chat-log"></div>
+
+                <form id="chatForm" class="chat-form" onsubmit="event.preventDefault(); return false;">
+                    <input type="text" id="chatInput" placeholder="Ask a question..." autocomplete="off">
+                    <button type="submit" id="btnSendChat" class="btn-send">Send</button>
+                </form>
+            </div>
         </section>
     </main>
 

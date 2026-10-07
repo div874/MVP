@@ -128,6 +128,10 @@
             btnChangeFile.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); resetFileInput(); reelFileInput.click(); });
         }
 
+        // Variables to store context for the chatbot
+        let currentReelsContext = [];
+        let currentReportContext = {};
+
         // Core Analyze Handler
         async function handleAnalyze(e) {
             if (e) e.preventDefault();
@@ -157,6 +161,9 @@
                 btnSubmit.querySelector('.btn-text').textContent = activeTab === 'multi_url' ? 'Analyzing Batch Reels in Parallel...' : 'Uploading to API...';
             }
 
+            const chatSection = document.getElementById('chatSection');
+            if (chatSection) chatSection.classList.add('hidden');
+
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
                 if (!response.ok) throw new Error(`Server returned status ${response.status}`);
@@ -164,103 +171,245 @@
                 const data = await response.json();
                 console.log('[App] API response:', data);
 
-                const ai = data.ai_analysis;
+                // Save context for chatbot
+                currentReelsContext = data.reels || [];
+                currentReportContext = data.content_learnings || {};
+
                 const statusBadge = document.getElementById('statusBadge');
                 const statusModel = document.getElementById('statusModel');
                 const statusFooter = document.getElementById('statusFooter');
 
                 if (statusBanner) statusBanner.classList.remove('hidden');
 
-                if (ai && ai.success) {
-                    if (statusBadge) statusBadge.textContent = '✦ Analysis Complete';
-                    if (statusModel) statusModel.textContent = ai.model || '';
+                if (data.status === 'success') {
+                    if (chatSection) chatSection.classList.remove('hidden');
+                    const batchCount = data.batch_count || (data.reels ? data.reels.length : 1);
+                    if (statusBadge) {
+                        statusBadge.textContent = batchCount > 1 
+                            ? `✦ Processed ${data.reels?.filter(r=>r.success).length || batchCount} of ${batchCount} Reference Reels`
+                            : '✦ Content Intelligence Complete';
+                    }
+                    if (statusModel) statusModel.textContent = data.ai_analysis?.model || 'Multimodal Vision AI';
 
-                    let formattedHtml = '';
-                    const a = ai.analysis;
-                    if (data.batch_count) {
-                        if (statusBadge) statusBadge.textContent = `✦ Parallel Analysis Complete (${data.batch_count} Reels)`;
-                        const items = [];
-                        const b = a;
-                        if (b.batch_summary) items.push(`<p class="analysis-heading">🚀 Cross-Reel Intelligence Summary</p><p class="analysis-line">${b.batch_summary}</p>`);
-                        if (Array.isArray(b.dominant_hook_patterns) && b.dominant_hook_patterns.length) {
-                            items.push(`<p class="analysis-heading">🪝 Dominant Hook Patterns</p><ul class="analysis-line">${b.dominant_hook_patterns.map(h=>`<li>• ${h}</li>`).join('')}</ul>`);
-                        }
-                        if (b.target_audience_overlap) items.push(`<p class="analysis-heading">👥 Target Audience Overlap</p><p class="analysis-line">${b.target_audience_overlap}</p>`);
-                        if (Array.isArray(b.top_content_strengths) && b.top_content_strengths.length) {
-                            items.push(`<p class="analysis-heading">✅ Top Content Strengths</p><ul class="analysis-line">${b.top_content_strengths.map(s=>`<li>• ${s}</li>`).join('')}</ul>`);
-                        }
-                        if (Array.isArray(b.cross_reel_opportunities) && b.cross_reel_opportunities.length) {
-                            items.push(`<p class="analysis-heading">💡 Cross-Reel Opportunities</p><ul class="analysis-line">${b.cross_reel_opportunities.map(o=>`<li>• ${o}</li>`).join('')}</ul>`);
-                        }
-                        if (b.recommended_creator_strategy) {
-                            items.push(`<p class="analysis-heading">🎯 Recommended Creator Strategy</p><p class="analysis-line">${b.recommended_creator_strategy}</p>`);
-                        }
+                    let htmlBuilder = [];
+                    const cl = data.content_learnings;
 
-                        if (Array.isArray(data.reels) && data.reels.length) {
-                            items.push(`<p class="analysis-heading" style="margin-top: 16px;">🎬 Individual Reel Breakdowns</p>`);
-                            data.reels.forEach((r, idx) => {
-                                const ra = r.ai_analysis?.analysis;
-                                const topic = typeof ra === 'object' ? (ra.topic || ra.summary) : 'Reel Analysis';
-                                items.push(`<p class="analysis-line"><strong>#${idx+1} ${topic}</strong> — <a href="${r.reel_url}" target="_blank" style="color:#c084fc;">Link ↗</a></p>`);
-                            });
-                        }
-                        formattedHtml = items.join('');
-                    } else if (typeof a === 'object' && a !== null) {
-                        const items = [];
-                        if (a.summary) items.push(`<p class="analysis-heading">📌 Summary</p><p class="analysis-line">${a.summary}</p>`);
-                        if (a.topic) items.push(`<p class="analysis-heading">🎯 Topic</p><p class="analysis-line">${a.topic}</p>`);
-                        if (a.content_category) items.push(`<p class="analysis-heading">📁 Category</p><p class="analysis-line">${a.content_category}</p>`);
-                        if (a.hook) items.push(`<p class="analysis-heading">🪝 Hook (${a.hook_type || 'Visual'})</p><p class="analysis-line">${a.hook}</p>`);
-                        if (a.target_audience) items.push(`<p class="analysis-heading">👥 Target Audience</p><p class="analysis-line">${a.target_audience}</p>`);
-                        if (a.storytelling_format) items.push(`<p class="analysis-heading">🎬 Format</p><p class="analysis-line">${a.storytelling_format}</p>`);
-                        if (a.visual_style) items.push(`<p class="analysis-heading">🎨 Visual Style</p><p class="analysis-line">${a.visual_style}</p>`);
-                        if (a.emotional_trigger) items.push(`<p class="analysis-heading">💡 Emotional Trigger</p><p class="analysis-line">${a.emotional_trigger}</p>`);
-                        
-                        if (a.engagement_potential) {
-                            const ep = a.engagement_potential;
-                            const level = typeof ep === 'object' ? ep.level : ep;
-                            const reason = typeof ep === 'object' ? ep.reason : '';
-                            items.push(`<p class="analysis-heading">⚡ Engagement Potential: <strong>${level}</strong></p><p class="analysis-line">${reason}</p>`);
-                        }
-
-                        if (Array.isArray(a.key_messages) && a.key_messages.length) {
-                            items.push(`<p class="analysis-heading">🔑 Key Messages</p><ul class="analysis-line">${a.key_messages.map(m=>`<li>• ${m}</li>`).join('')}</ul>`);
-                        }
-                        if (Array.isArray(a.content_strengths) && a.content_strengths.length) {
-                            items.push(`<p class="analysis-heading">✅ Strengths</p><ul class="analysis-line">${a.content_strengths.map(s=>`<li>• ${s}</li>`).join('')}</ul>`);
-                        }
-                        if (Array.isArray(a.content_weaknesses) && a.content_weaknesses.length) {
-                            items.push(`<p class="analysis-heading">⚠️ Weaknesses</p><ul class="analysis-line">${a.content_weaknesses.map(w=>`<li>• ${w}</li>`).join('')}</ul>`);
-                        }
-                        if (Array.isArray(a.content_opportunities) && a.content_opportunities.length) {
-                            items.push(`<p class="analysis-heading">🚀 Opportunities</p><ul class="analysis-line">${a.content_opportunities.map(o=>`<li>• ${o}</li>`).join('')}</ul>`);
-                        }
-                        if (a.recommended_content_angle) {
-                            items.push(`<p class="analysis-heading">💡 Recommended Creator Angle</p><p class="analysis-line">${a.recommended_content_angle}</p>`);
-                        }
-                        formattedHtml = items.join('');
-                    } else {
-                        formattedHtml = (a || '')
-                            .split('\n')
-                            .map(line => {
-                                line = line.trim();
-                                if (!line) return '';
-                                if (/^\d+\./.test(line)) return `<p class="analysis-heading">${line}</p>`;
-                                return `<p class="analysis-line">${line}</p>`;
-                            })
-                            .join('');
+                    // ==================================================
+                    // 1. EXECUTIVE HEADER & CONTENT LEARNINGS
+                    // ==================================================
+                    if (cl && cl.summary_header) {
+                        htmlBuilder.push(`
+                            <div class="report-header-card">
+                                <h2 class="report-main-title">${cl.summary_header.title}</h2>
+                                <span class="report-subtitle">${cl.summary_header.subtitle || 'Here’s what stood out from the Reels you shared.'}</span>
+                                ${cl.summary_header.description ? `<p class="report-description">${cl.summary_header.description}</p>` : ''}
+                            </div>
+                        `);
                     }
 
-                    if (statusMessage) statusMessage.innerHTML = formattedHtml;
+                    // --------------------------------------------------
+                    // 1. WHAT THESE REELS ARE ABOUT
+                    // --------------------------------------------------
+                    if (cl && Array.isArray(cl.what_these_reels_are_about) && cl.what_these_reels_are_about.length > 0) {
+                        htmlBuilder.push(`
+                            <div class="report-section">
+                                <h3 class="section-title">1. WHAT THESE REELS ARE ABOUT</h3>
+                                <div class="directions-container">
+                        `);
 
-                    if (statusFooter && ai.usage) {
-                        statusFooter.innerHTML = `🔢 ${ai.usage.prompt_tokens} prompt + ${ai.usage.completion_tokens} completion = <strong>${ai.usage.total_tokens} tokens</strong>`;
+                        cl.what_these_reels_are_about.forEach((cat) => {
+                            htmlBuilder.push(`
+                                <div class="direction-card">
+                                    <div class="direction-card-header">
+                                        <h4 class="direction-name">${cat.category_name}</h4>
+                                    </div>
+                                    <div class="direction-card-body">
+                                        ${cat.summary_text ? `<p class="category-summary-text">${cat.summary_text}</p>` : ''}
+                                        <ul class="direction-reels-list">
+                            `);
+
+                            if (Array.isArray(cat.reels)) {
+                                cat.reels.forEach(r => {
+                                    const titleStr = r.display_title || `Reel ${r.id}`;
+                                    if (r.reel_url) {
+                                        htmlBuilder.push(`<li>• <a href="${r.reel_url}" target="_blank" class="direction-reel-link">${titleStr} ↗</a></li>`);
+                                    } else {
+                                        htmlBuilder.push(`<li>• <span class="direction-reel-title">${titleStr}</span></li>`);
+                                    }
+                                });
+                            }
+
+                            htmlBuilder.push(`</ul>`);
+
+                            if (cat.note) {
+                                htmlBuilder.push(`
+                                    <div class="direction-explanation why-separate">
+                                        <p class="explanation-text">${cat.note}</p>
+                                    </div>
+                                `);
+                            }
+
+                            htmlBuilder.push(`</div></div>`);
+                        });
+
+                        htmlBuilder.push(`</div></div>`);
+                    }
+
+                    // --------------------------------------------------
+                    // 2. WHAT STOOD OUT
+                    // --------------------------------------------------
+                    if (cl && Array.isArray(cl.what_stood_out) && cl.what_stood_out.length > 0) {
+                        htmlBuilder.push(`
+                            <div class="report-section">
+                                <h3 class="section-title">2. WHAT STOOD OUT</h3>
+                                <div class="learnings-grid">
+                        `);
+
+                        cl.what_stood_out.forEach((item) => {
+                            htmlBuilder.push(`
+                                <div class="learning-card">
+                                    <div class="learning-card-header">
+                                        <h4 class="learning-title">${item.title}</h4>
+                                    </div>
+                                    <div class="learning-card-body">
+                                        <p class="block-text">${item.observation}</p>
+                                    </div>
+                                </div>
+                            `);
+                        });
+
+                        htmlBuilder.push(`</div></div>`);
+                    }
+
+                    // --------------------------------------------------
+                    // 3. WHAT YOU CAN TRY
+                    // --------------------------------------------------
+                    if (cl && Array.isArray(cl.what_you_can_try) && cl.what_you_can_try.length > 0) {
+                        htmlBuilder.push(`
+                            <div class="report-section">
+                                <h3 class="section-title">3. WHAT YOU CAN TRY</h3>
+                                <div class="experiments-grid">
+                        `);
+
+                        cl.what_you_can_try.forEach((exp) => {
+                            const tryText = exp.what_to_try || exp.try || '';
+                            const whyText = exp.why_it_may_be_worth_trying || exp.why || '';
+                            const exampleText = exp.simple_example || (Array.isArray(exp.how) ? exp.how.join(', ') : '');
+
+                            htmlBuilder.push(`
+                                <div class="experiment-card">
+                                    <div class="exp-header">
+                                        <h4 class="exp-title">${exp.title}</h4>
+                                    </div>
+                                    <div class="exp-body">
+                                        ${tryText ? `<div class="exp-row"><span class="exp-label">What to try:</span> <p class="exp-val">${tryText}</p></div>` : ''}
+                                        ${whyText ? `<div class="exp-row"><span class="exp-label">Why it may be worth trying:</span> <p class="exp-val">${whyText}</p></div>` : ''}
+                                        ${exampleText ? `<div class="exp-row"><span class="exp-label">Simple example:</span> <p class="exp-val bold-text">${exampleText}</p></div>` : ''}
+                                    </div>
+                                </div>
+                            `);
+                        });
+
+                        htmlBuilder.push(`</div></div>`);
+                    }
+
+                    // --------------------------------------------------
+                    // 4. WHAT WE DON'T KNOW YET
+                    // --------------------------------------------------
+                    if (cl && (cl.what_we_dont_know_yet || cl.what_we_cannot_conclude)) {
+                        const dontKnowText = typeof cl.what_we_dont_know_yet === 'string' 
+                            ? cl.what_we_dont_know_yet 
+                            : (Array.isArray(cl.what_we_cannot_conclude) ? cl.what_we_cannot_conclude.join(' ') : 'We do not have enough historical performance metrics yet to claim these formats definitely outperform others.');
+
+                        htmlBuilder.push(`
+                            <div class="report-section">
+                                <h3 class="section-title title-cannot">4. WHAT WE DON'T KNOW YET</h3>
+                                <div class="limitations-card">
+                                    <p class="dont-know-text">${dontKnowText}</p>
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                    // --------------------------------------------------
+                    // 5. ONE SIMPLE TAKEAWAY
+                    // --------------------------------------------------
+                    if (cl && (cl.one_simple_takeaway || cl.one_takeaway)) {
+                        const takeawayText = cl.one_simple_takeaway || cl.one_takeaway;
+                        htmlBuilder.push(`
+                            <div class="takeaway-card">
+                                <div class="takeaway-badge">🎯 ONE SIMPLE TAKEAWAY</div>
+                                <p class="takeaway-text">"${takeawayText}"</p>
+                            </div>
+                        `);
+                    }
+
+                    // ==================================================
+                    // COLLAPSIBLE REEL ANALYSES
+                    // ==================================================
+                    htmlBuilder.push(`
+                        <details class="evidence-accordion">
+                            <summary class="accordion-summary">
+                                <span>🔍 View Individual Reel Analyses</span>
+                                <span class="accordion-arrow">▼</span>
+                            </summary>
+                            <div class="accordion-content">
+                    `);
+
+                    // Individual Breakdown Cards
+                    if (Array.isArray(data.reels) && data.reels.length > 0) {
+                        data.reels.forEach((reelItem, index) => {
+                            const reelNum = index + 1;
+                            const isSuccess = reelItem.success;
+                            const ra = reelItem.analysis;
+                            const sourceLabel = reelItem.reel_url ? `Link ↗` : (reelItem.filename || `Reel #${reelNum}`);
+
+                            htmlBuilder.push(`
+                                <div class="reel-individual-card">
+                                    <div class="reel-card-header">
+                                        <div class="reel-badge-group">
+                                            <span class="reel-num-tag">Reel #${reelNum}</span>
+                                            <span class="reel-meta-tag">${reelItem.duration_sec ? `${reelItem.duration_sec}s` : ''} ${reelItem.has_audio ? '🔊 Audio' : '🔇 Silent'}</span>
+                                        </div>
+                                        ${reelItem.reel_url ? `<a href="${reelItem.reel_url}" target="_blank" class="reel-url-link">${sourceLabel}</a>` : ''}
+                                    </div>
+                            `);
+
+                            if (!isSuccess || !ra) {
+                                htmlBuilder.push(`
+                                    <div class="reel-card-body">
+                                        <p class="error-text">⚠️ Analysis failed for this Reel: ${reelItem.error || 'Could not fetch video.'}</p>
+                                    </div>
+                                `);
+                            } else {
+                                htmlBuilder.push(`<div class="reel-card-body">`);
+                                if (ra.summary) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">📌 Summary</span><p class="item-text">${ra.summary}</p></div>`);
+                                if (ra.topic) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">🎯 Topic</span><p class="item-text">${ra.topic}</p></div>`);
+                                if (ra.content_category) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">📁 Category</span><p class="item-text">${ra.content_category}</p></div>`);
+                                if (ra.hook) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">🪝 Hook (${ra.hook_type || 'Visual'})</span><p class="item-text">${ra.hook}</p></div>`);
+                                if (ra.target_audience) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">👥 Target Audience</span><p class="item-text">${ra.target_audience}</p></div>`);
+                                if (ra.storytelling_format) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">🎬 Format & Style</span><p class="item-text">${ra.storytelling_format} ${ra.visual_style ? `(${ra.visual_style})` : ''}</p></div>`);
+                                if (ra.emotional_trigger) htmlBuilder.push(`<div class="analysis-item"><span class="item-label">💡 Psychological Trigger</span><p class="item-text">${ra.emotional_trigger}</p></div>`);
+                                if (Array.isArray(ra.observations) && ra.observations.length) {
+                                    htmlBuilder.push(`<div class="analysis-item"><span class="item-label">👁️ Evidence Observations</span><ul class="item-list">${ra.observations.map(o => `<li>• ${o}</li>`).join('')}</ul></div>`);
+                                }
+                                htmlBuilder.push(`</div>`);
+                            }
+                            htmlBuilder.push(`</div>`);
+                        });
+                    }
+
+                    htmlBuilder.push(`</div></details>`);
+
+                    if (statusMessage) statusMessage.innerHTML = htmlBuilder.join('');
+
+                    if (statusFooter && data.ai_analysis?.usage) {
+                        const usage = data.ai_analysis.usage;
+                        statusFooter.innerHTML = `🔢 ${usage.prompt_tokens} prompt + ${usage.completion_tokens} completion = <strong>${usage.total_tokens} total tokens</strong>`;
                     }
                 } else {
-                    // AI call failed but upload succeeded
-                    if (statusBadge) statusBadge.textContent = '⚠ Upload OK — AI Error';
-                    if (statusMessage) statusMessage.innerHTML = `<p class="analysis-line">${ai?.error || 'Unknown AI error.'}</p>`;
-                    if (statusFooter) statusFooter.innerHTML = `File saved at: <code>${data.data?.saved_path || 'server'}</code>`;
+                    if (statusBadge) statusBadge.textContent = '⚠ Analysis Error';
+                    if (statusMessage) statusMessage.innerHTML = `<p class="analysis-line">${data.message || 'Unknown error.'}</p>`;
                 }
             } catch (error) {
                 console.error('[App] Upload Error:', error);
@@ -268,7 +417,7 @@
             } finally {
                 if (btnSubmit) {
                     btnSubmit.classList.remove('loading');
-                    btnSubmit.querySelector('.btn-text').textContent = 'Analyze Reel';
+                    btnSubmit.querySelector('.btn-text').textContent = activeTab === 'multi_url' ? 'Analyze Multiple Reels →' : 'Analyze Reel';
                 }
             }
         }
@@ -281,7 +430,78 @@
             form.addEventListener('submit', handleAnalyze);
         }
 
-        console.log('[App] Init complete. Listeners bound to btnSubmit and form.');
+        // --- Chatbot Logic ---
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatLog = document.getElementById('chatLog');
+        const chatChips = document.querySelectorAll('.chat-chip');
+        const btnSendChat = document.getElementById('btnSendChat');
+
+        function appendMessage(role, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${role}`;
+            msgDiv.textContent = text;
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        async function submitChatMessage(messageText) {
+            if (!messageText) return;
+            
+            appendMessage('user', messageText);
+            chatInput.value = '';
+            
+            // disable UI while fetching
+            chatInput.disabled = true;
+            btnSendChat.disabled = true;
+            btnSendChat.textContent = '...';
+
+            try {
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: messageText,
+                        reels_context: currentReelsContext,
+                        report_context: currentReportContext
+                    })
+                });
+
+                if (!response.ok) throw new Error('Chat request failed');
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    appendMessage('assistant', data.reply);
+                } else {
+                    appendMessage('assistant', 'Sorry, I ran into an error getting your answer.');
+                }
+            } catch (err) {
+                console.error('[CHAT] Error:', err);
+                appendMessage('assistant', 'Sorry, could not connect to the chat service.');
+            } finally {
+                chatInput.disabled = false;
+                btnSendChat.disabled = false;
+                btnSendChat.textContent = 'Send';
+                chatInput.focus();
+            }
+        }
+
+        if (chatForm) {
+            chatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                submitChatMessage(chatInput.value.trim());
+            });
+        }
+
+        if (chatChips) {
+            chatChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    submitChatMessage(chip.textContent);
+                });
+            });
+        }
+
+        console.log('[App] Init complete. Listeners bound to btnSubmit, form, and chatbot.');
 
     } catch (initError) {
         console.error('[App] INIT CRASH — listeners failed to attach:', initError);
