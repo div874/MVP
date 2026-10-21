@@ -9,8 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <!-- CometChat JavaScript SDK -->
-    <script src="https://unpkg.com/@cometchat/chat-sdk-javascript/CometChat.js"></script>
 </head>
 <body>
     <div class="background-globes">
@@ -23,18 +21,11 @@
             <div class="brand-logo-wrapper">
                 <img src="logo.jpg" alt="Reel Content Intelligence Logo" class="brand-logo">
             </div>
-            <div class="header-badges">
-                <div class="brand-badge">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                    <span>AI Reel Intelligence</span>
-                </div>
-                <div class="cometchat-header-pill" id="cometChatStatusPill">
-                    <span class="cometchat-live-dot"></span>
-                    <span id="cometChatStatusText">CometChat: Connecting...</span>
-                    <span class="cometchat-badge-tag">#reel-creators-lounge</span>
-                </div>
+            <div class="brand-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span>AI Reel Intelligence</span>
             </div>
             <h1>Analyze Your Content</h1>
             <p>Upload the reels you've saved and discover the patterns, hooks and content opportunities hidden inside them.</p>
@@ -151,64 +142,30 @@
                 <div class="status-footer" id="statusFooter"></div>
             </div>
 
-            <!-- CometChat Creator Collaboration Section -->
-            <div id="chatSection" class="chat-section">
+            <!-- Chatbot Section -->
+            <div id="chatSection" class="chat-section hidden">
                 <div class="chat-header">
-                    <div class="chat-header-left">
-                        <div class="chat-icon-badge">💬</div>
-                        <div>
-                            <h3>Creator Collaboration Lounge</h3>
-                            <span class="chat-subtitle">Real-time chat powered by <strong class="cometchat-brand">CometChat</strong></span>
-                        </div>
-                    </div>
-                    <div class="chat-header-actions">
-                        <div class="chat-user-badge" id="currentChatUserBadge">
-                            <span class="user-avatar" id="currentUserAvatar">👤</span>
-                            <span id="currentUserName">Alex (Creator)</span>
-                        </div>
-                        <button type="button" class="btn-switch-user" id="btnSwitchUser" title="Switch between Creator & Editor to test real-time chat">
-                            🔄 Switch User
-                        </button>
-                    </div>
-                </div>
-
-                <div class="chat-channel-banner">
-                    <span>📡 Live Channel: <strong>#reel-creators-lounge</strong></span>
-                    <button type="button" class="btn-share-hook" id="btnShareReelHook" style="display: none;">
-                        🚀 Share Reel Analysis to Chat
-                    </button>
+                    <h3>💬 Ask about these Reels</h3>
                 </div>
                 
                 <div class="chat-suggestions">
-                    <button class="chat-chip" type="button">🎬 What do you think of this hook structure?</button>
-                    <button class="chat-chip" type="button">✂️ Pacing is sharp! Let's cut 1s off the intro.</button>
-                    <button class="chat-chip" type="button">🎬 Can we add a visual zoom effect at 0:02?</button>
-                    <button class="chat-chip" type="button">✂️ Added to the edit queue for tomorrow's reel!</button>
+                    <button class="chat-chip">What did these Reels have in common?</button>
+                    <button class="chat-chip">Which ideas are relevant for my therapy business?</button>
+                    <button class="chat-chip">What should I try first?</button>
+                    <button class="chat-chip">Why did you separate some Reels?</button>
+                    <button class="chat-chip">Give me an example for SoulCare.</button>
+                    <button class="chat-chip">Which Reel is most useful for me?</button>
                 </div>
 
-                <div id="chatLog" class="chat-log">
-                    <div class="chat-loading-notice" id="chatLoadingNotice">
-                        <span>Connecting to CometChat live channel...</span>
-                    </div>
-                </div>
+                <div id="chatLog" class="chat-log"></div>
 
                 <form id="chatForm" class="chat-form" onsubmit="event.preventDefault(); return false;">
-                    <input type="text" id="chatInput" placeholder="Message fellow creators in real-time via CometChat..." autocomplete="off">
-                    <button type="submit" id="btnSendChat" class="btn-send">
-                        <span>Send</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
+                    <input type="text" id="chatInput" placeholder="Ask a question..." autocomplete="off">
+                    <button type="submit" id="btnSendChat" class="btn-send">Send</button>
                 </form>
             </div>
         </section>
     </main>
-
-    <!-- Floating CometChat Launcher -->
-    <button class="floating-cometchat-btn" id="btnToggleFloatingChat" title="Open Creator Collaboration Chat">
-        <span class="floating-dot"></span>
-        <span class="floating-icon">💬</span>
-        <span class="floating-label">Creator Chat</span>
-    </button>
 
     <script src="app.js"></script>
 </body>

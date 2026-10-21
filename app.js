@@ -162,6 +162,7 @@
             }
 
             const chatSection = document.getElementById('chatSection');
+            if (chatSection) chatSection.classList.add('hidden');
 
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
@@ -182,8 +183,6 @@
 
                 if (data.status === 'success') {
                     if (chatSection) chatSection.classList.remove('hidden');
-                    const btnShareReelHook = document.getElementById('btnShareReelHook');
-                    if (btnShareReelHook) btnShareReelHook.style.display = 'inline-block';
                     const batchCount = data.batch_count || (data.reels ? data.reels.length : 1);
                     if (statusBadge) {
                         statusBadge.textContent = batchCount > 1 
@@ -431,350 +430,78 @@
             form.addEventListener('submit', handleAnalyze);
         }
 
-        // ==================================================
-        // COMETCHAT REAL-TIME CREATOR COLLABORATION ENGINE
-        // ==================================================
-        const COMETCHAT_CONFIG = {
-            appID: '1684866fb545df608',
-            region: 'in',
-            authKey: '167fda37b0657bc5e4251bc5837047b5d93552b9',
-            groupGUID: 'reel_creators_hub',
-            groupName: 'Reel Creators Collaboration'
-        };
-
-        const CHAT_USERS = [
-            { uid: 'creator_1', name: 'Alex (Creator)', avatar: '🎬' },
-            { uid: 'creator_2', name: 'Sam (Video Editor)', avatar: '✂️' }
-        ];
-        let currentUserIdx = 0;
-        let loggedInCometUser = null;
-
+        // --- Chatbot Logic ---
         const chatForm = document.getElementById('chatForm');
         const chatInput = document.getElementById('chatInput');
         const chatLog = document.getElementById('chatLog');
         const chatChips = document.querySelectorAll('.chat-chip');
         const btnSendChat = document.getElementById('btnSendChat');
-        const cometChatStatusPill = document.getElementById('cometChatStatusPill');
-        const cometChatStatusText = document.getElementById('cometChatStatusText');
-        const currentChatUserBadge = document.getElementById('currentChatUserBadge');
-        const currentUserAvatar = document.getElementById('currentUserAvatar');
-        const currentUserName = document.getElementById('currentUserName');
-        const btnSwitchUser = document.getElementById('btnSwitchUser');
-        const btnShareReelHook = document.getElementById('btnShareReelHook');
-        const btnToggleFloatingChat = document.getElementById('btnToggleFloatingChat');
-        const chatLoadingNotice = document.getElementById('chatLoadingNotice');
 
-        function updateStatusUI(text, isLive = true) {
-            if (cometChatStatusText) cometChatStatusText.textContent = text;
-            if (cometChatStatusPill) {
-                cometChatStatusPill.style.borderColor = isLive ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)';
-            }
-        }
-
-        function updateUserBadgeUI() {
-            const user = CHAT_USERS[currentUserIdx];
-            if (currentUserName) currentUserName.textContent = user.name;
-            if (currentUserAvatar) currentUserAvatar.textContent = user.avatar;
-        }
-
-        function appendCometChatMessage(msg, isExplicitSelf = null) {
-            if (chatLoadingNotice) chatLoadingNotice.style.display = 'none';
-
-            const sender = msg.getSender ? msg.getSender() : null;
-            const senderUid = sender ? sender.getUid() : (msg.senderUid || (msg.getSenderId ? msg.getSenderId() : ''));
-            const text = msg.getText ? msg.getText() : (msg.text || '');
-            const sentAt = msg.getSentAt ? new Date(msg.getSentAt() * 1000) : new Date();
-            const timeStr = sentAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            const currentUid = loggedInCometUser ? loggedInCometUser.getUid() : 'creator_1';
-            const isUserSelf = isExplicitSelf !== null ? isExplicitSelf : (senderUid === currentUid);
-
-            let displayName = 'Creator';
-            let avatar = '🎬';
-            if (senderUid === 'creator_2') {
-                displayName = 'Sam (Video Editor)';
-                avatar = '✂️';
-            } else if (senderUid === 'creator_1') {
-                displayName = 'Alex (Creator)';
-                avatar = '🎬';
-            } else if (sender) {
-                displayName = sender.getName() || 'Reel Creator';
-                avatar = isUserSelf ? '🎬' : '✂️';
-            }
-
+        function appendMessage(role, text) {
             const msgDiv = document.createElement('div');
-            msgDiv.className = `chat-message ${isUserSelf ? 'self' : 'other'}`;
-
-            let bubbleContent = escapeHtml(text);
-            if (text.includes('[Shared Reel Analysis]')) {
-                const parts = text.split('[Shared Reel Analysis]');
-                bubbleContent = `
-                    <div class="reel-analysis-card">
-                        <div class="reel-card-badge">📊 Reel Intelligence Shared</div>
-                        <div class="reel-card-body">${escapeHtml(parts[1] ? parts[1].trim() : text)}</div>
-                    </div>
-                `;
-            }
-
-            if (isUserSelf) {
-                msgDiv.innerHTML = `
-                    <div class="chat-content-wrap">
-                        <div class="chat-meta">
-                            <span class="chat-sender-name">${displayName}</span>
-                            <span class="chat-time">${timeStr}</span>
-                        </div>
-                        <div class="chat-bubble">${bubbleContent}</div>
-                    </div>
-                    <div class="chat-msg-avatar" title="${displayName}">${avatar}</div>
-                `;
-            } else {
-                msgDiv.innerHTML = `
-                    <div class="chat-msg-avatar" title="${displayName}">${avatar}</div>
-                    <div class="chat-content-wrap">
-                        <div class="chat-meta">
-                            <span class="chat-sender-name">${displayName}</span>
-                            <span class="chat-time">${timeStr}</span>
-                        </div>
-                        <div class="chat-bubble">${bubbleContent}</div>
-                    </div>
-                `;
-            }
-
+            msgDiv.className = `chat-message ${role}`;
+            msgDiv.textContent = text;
             chatLog.appendChild(msgDiv);
             chatLog.scrollTop = chatLog.scrollHeight;
         }
 
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        async function initCometChatLounge() {
-            if (typeof CometChat === 'undefined') {
-                console.warn('[CometChat] SDK not loaded yet. Retrying in 1s...');
-                setTimeout(initCometChatLounge, 1000);
-                return;
-            }
+        async function submitChatMessage(messageText) {
+            if (!messageText) return;
+            
+            appendMessage('user', messageText);
+            chatInput.value = '';
+            
+            // disable UI while fetching
+            chatInput.disabled = true;
+            btnSendChat.disabled = true;
+            btnSendChat.textContent = '...';
 
             try {
-                updateStatusUI('CometChat: Connecting...', false);
-                const appSettings = new CometChat.AppSettingsBuilder()
-                    .subscribePresenceForAllUsers()
-                    .setRegion(COMETCHAT_CONFIG.region)
-                    .autoEstablishSocketConnection(true)
-                    .build();
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: messageText,
+                        reels_context: currentReelsContext,
+                        report_context: currentReportContext
+                    })
+                });
 
-                await CometChat.init(COMETCHAT_CONFIG.appID, appSettings);
-                console.log('[CometChat] Init successful.');
-
-                await loginOrRegisterUser(CHAT_USERS[currentUserIdx]);
-                await joinOrCreateCollaborationGroup();
-                await fetchRecentMessages();
-                setupRealtimeListener();
-
-                updateStatusUI('CometChat: Live (#reel-creators-lounge)', true);
-            } catch (err) {
-                console.error('[CometChat] Init/Setup error:', err);
-                updateStatusUI('CometChat: Offline', false);
-            }
-        }
-
-        async function loginOrRegisterUser(userObj) {
-            try {
-                const currentUser = await CometChat.getLoggedinUser();
-                if (currentUser && currentUser.getUid() === userObj.uid) {
-                    loggedInCometUser = currentUser;
-                    console.log('[CometChat] Already logged in as:', currentUser.getName());
-                    updateUserBadgeUI();
-                    return currentUser;
-                }
-
-                if (currentUser) {
-                    await CometChat.logout();
-                }
-
-                try {
-                    loggedInCometUser = await CometChat.login(userObj.uid, COMETCHAT_CONFIG.authKey);
-                } catch (loginErr) {
-                    if (loginErr && loginErr.code === 'ERR_UID_NOT_FOUND') {
-                        console.log(`[CometChat] User ${userObj.uid} not found, creating dynamically...`);
-                        const newUser = new CometChat.User(userObj.uid);
-                        newUser.setName(userObj.name);
-                        await CometChat.createUser(newUser, COMETCHAT_CONFIG.authKey);
-                        loggedInCometUser = await CometChat.login(userObj.uid, COMETCHAT_CONFIG.authKey);
-                    } else {
-                        throw loginErr;
-                    }
-                }
-
-                console.log('[CometChat] Logged in successfully:', loggedInCometUser.getName());
-                updateUserBadgeUI();
-                return loggedInCometUser;
-            } catch (err) {
-                console.error('[CometChat] Login error:', err);
-                throw err;
-            }
-        }
-
-        async function joinOrCreateCollaborationGroup() {
-            try {
-                const GUID = COMETCHAT_CONFIG.groupGUID;
-                const groupName = COMETCHAT_CONFIG.groupName;
-                const groupType = CometChat.GROUP_TYPE.PUBLIC;
-
-                try {
-                    const group = new CometChat.Group(GUID, groupName, groupType, '');
-                    await CometChat.createGroup(group);
-                    console.log('[CometChat] Group created successfully.');
-                } catch (grpErr) {
-                    // Group already exists, attempt to join
-                    try {
-                        await CometChat.joinGroup(GUID, groupType, '');
-                        console.log('[CometChat] Joined existing group.');
-                    } catch (joinErr) {
-                        // Already member or joined
-                        console.log('[CometChat] Already a member of group.');
-                    }
-                }
-            } catch (e) {
-                console.error('[CometChat] Group handling error:', e);
-            }
-        }
-
-        async function fetchRecentMessages() {
-            try {
-                chatLog.innerHTML = '';
-                const messagesRequest = new CometChat.MessagesRequestBuilder()
-                    .setGUID(COMETCHAT_CONFIG.groupGUID)
-                    .setLimit(25)
-                    .build();
-
-                const messages = await messagesRequest.fetchPrevious();
-                if (messages && messages.length > 0) {
-                    messages.forEach(msg => {
-                        if (msg.getText) appendCometChatMessage(msg);
-                    });
+                if (!response.ok) throw new Error('Chat request failed');
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    appendMessage('assistant', data.reply);
                 } else {
-                    chatLog.innerHTML = `
-                        <div class="chat-loading-notice">
-                            <span>Welcome to the #reel-creators-lounge! Send the first message below. 🚀</span>
-                        </div>
-                    `;
+                    appendMessage('assistant', 'Sorry, I ran into an error getting your answer.');
                 }
             } catch (err) {
-                console.error('[CometChat] Fetch history error:', err);
-            }
-        }
-
-        function setupRealtimeListener() {
-            const listenerId = 'reel_collaboration_listener';
-            CometChat.removeMessageListener(listenerId);
-
-            CometChat.addMessageListener(
-                listenerId,
-                new CometChat.MessageListener({
-                    onTextMessageReceived: (textMessage) => {
-                        console.log('[CometChat] Real-time message received:', textMessage);
-                        if (textMessage.getReceiverId() === COMETCHAT_CONFIG.groupGUID) {
-                            appendCometChatMessage(textMessage, false);
-                        }
-                    }
-                })
-            );
-            console.log('[CometChat] Real-time message listener active.');
-        }
-
-        async function sendCometChatMessage(text) {
-            if (!text || !text.trim()) return;
-            const messageText = text.trim();
-
-            if (!loggedInCometUser) {
-                alert('CometChat is still connecting. Please try again in a moment.');
-                return;
-            }
-
-            if (chatInput) chatInput.value = '';
-            if (btnSendChat) btnSendChat.disabled = true;
-
-            try {
-                const textMessage = new CometChat.TextMessage(
-                    COMETCHAT_CONFIG.groupGUID,
-                    messageText,
-                    CometChat.RECEIVER_TYPE.GROUP
-                );
-
-                const sentMessage = await CometChat.sendMessage(textMessage);
-                console.log('[CometChat] Message sent successfully:', sentMessage);
-                appendCometChatMessage(sentMessage, true);
-            } catch (err) {
-                console.error('[CometChat] Send error:', err);
-                alert('Could not send message over CometChat: ' + (err.message || 'Network error'));
+                console.error('[CHAT] Error:', err);
+                appendMessage('assistant', 'Sorry, could not connect to the chat service.');
             } finally {
-                if (btnSendChat) btnSendChat.disabled = false;
-                if (chatInput) {
-                    chatInput.disabled = false;
-                    chatInput.focus();
-                }
+                chatInput.disabled = false;
+                btnSendChat.disabled = false;
+                btnSendChat.textContent = 'Send';
+                chatInput.focus();
             }
         }
 
         if (chatForm) {
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                sendCometChatMessage(chatInput.value);
+                submitChatMessage(chatInput.value.trim());
             });
         }
 
         if (chatChips) {
             chatChips.forEach(chip => {
                 chip.addEventListener('click', () => {
-                    sendCometChatMessage(chip.textContent);
+                    submitChatMessage(chip.textContent);
                 });
             });
         }
 
-        if (btnSwitchUser) {
-            btnSwitchUser.addEventListener('click', async () => {
-                btnSwitchUser.disabled = true;
-                btnSwitchUser.textContent = 'Switching...';
-                currentUserIdx = (currentUserIdx + 1) % CHAT_USERS.length;
-                try {
-                    await loginOrRegisterUser(CHAT_USERS[currentUserIdx]);
-                    await fetchRecentMessages();
-                } catch (e) {
-                    console.error('Switch user error:', e);
-                } finally {
-                    btnSwitchUser.disabled = false;
-                    btnSwitchUser.textContent = '🔄 Switch User';
-                }
-            });
-        }
-
-        if (btnShareReelHook) {
-            btnShareReelHook.addEventListener('click', () => {
-                const report = currentReportContext || {};
-                let summaryTitle = report.summary_header?.title || 'Reel Analysis Complete';
-                let topHook = report.takeaways?.[0] || 'Strong visual pattern interrupt detected in initial 2 seconds.';
-                let shareText = `🎬 [Shared Reel Analysis] ${summaryTitle} — Hook Strategy: "${topHook}"`;
-                sendCometChatMessage(shareText);
-            });
-        }
-
-        if (btnToggleFloatingChat) {
-            btnToggleFloatingChat.addEventListener('click', () => {
-                const lounge = document.getElementById('chatSection');
-                if (lounge) lounge.scrollIntoView({ behavior: 'smooth' });
-                if (chatInput) setTimeout(() => chatInput.focus(), 400);
-            });
-        }
-
-        // Initialize CometChat Lounge on page load
-        initCometChatLounge();
-
-        console.log('[App] Init complete. Listeners bound to btnSubmit, form, and CometChat lounge.');
+        console.log('[App] Init complete. Listeners bound to btnSubmit, form, and chatbot.');
 
     } catch (initError) {
         console.error('[App] INIT CRASH — listeners failed to attach:', initError);
